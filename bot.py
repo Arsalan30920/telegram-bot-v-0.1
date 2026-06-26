@@ -1,5 +1,6 @@
 # ================================= imports ====================
 from telegram import Update, ReplyKeyboardMarkup
+import os
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -9,7 +10,7 @@ from telegram.ext import (
 )
 
 # ======================= Bot Token ====================
-BotToken = "8813949311:AAESHJMoZTu-YspoBaxfoR6fof-9unR5OyQ"
+BotToken = os.getenv("BOT_TOKEN")
 adminID = 8581685408
 # =====================================================
 
