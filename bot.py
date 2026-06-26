@@ -1,4 +1,5 @@
 # ================================= imports ====================
+import logging
 from telegram import Update, ReplyKeyboardMarkup
 import os
 from telegram.ext import (
@@ -12,6 +13,7 @@ from telegram.ext import (
 # ======================= Bot Token ====================
 BotToken = os.getenv("BOT_TOKEN")
 adminID = 8581685408
+logging.basicConfig(level=logging.INFO)
 # =====================================================
 
 
