@@ -1,4 +1,3 @@
-# ================================= imports ====================
 import logging
 from telegram import Update, ReplyKeyboardMarkup
 import os
@@ -10,14 +9,10 @@ from telegram.ext import (
     filters
 )
 
-# ======================= Bot Token ====================
 BotToken = os.getenv("BOT_TOKEN")
 adminID = 8581685408
 logging.basicConfig(level=logging.INFO)
-# =====================================================
 
-
-# ======================= START =========================
 async def start_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     keyboard = [
@@ -32,25 +27,25 @@ async def start_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=markup
     )
 
-
-# ======================= HANDLER =========================
 async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     text = update.message.text
     user = update.effective_user
 
-    # ================= reset states (FIXED) =================
     if text == "🐞 گزارش باگ":
-        context.user_data["reportBug"] = True   # ❌ no reset full dict
+        context.user_data.clear()
+        context.user_data["reportBug"] = True
         await update.message.reply_text("مشکل را بنویس یا عکس یا ویدیو ارسال کن")
         return
 
     elif text == "💬 پیشنهاد":
+        context.user_data.clear()
         context.user_data["Suggestion"] = True
         await update.message.reply_text("پیشنهادت را بنویس")
         return
 
     elif text == "تجربیات من از بازی":
+        context.user_data.clear()
         context.user_data["playTime"] = True
         await update.message.reply_text("تجربه‌ات را ارسال کن 🌹")
         return
@@ -70,8 +65,6 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-
-    # ================= BUG REPORT =================
     if context.user_data.get("reportBug"):
 
         caption = update.message.caption or ""
@@ -128,11 +121,9 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         await update.message.reply_text("✅ گزارش شما ارسال شد")
-        context.user_data["reportBug"] = False
+        context.user_data.clear()
         return
 
-
-    # ================= SUGGESTION =================
     if context.user_data.get("Suggestion"):
 
         caption = update.message.caption or ""
@@ -186,11 +177,9 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         await update.message.reply_text("❤️ ممنون از پیشنهادت")
-        context.user_data["Suggestion"] = False
+        context.user_data.clear()
         return
 
-
-    # ================= PLAY EXPERIENCE =================
     if context.user_data.get("playTime"):
 
         caption = update.message.caption or ""
@@ -244,14 +233,11 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         await update.message.reply_text("🌹 ممنون از تجربه‌ات")
-        context.user_data["playTime"] = False
+        context.user_data.clear()
         return
-
 
     await update.message.reply_text("❌ لطفاً یکی از گزینه‌ها را انتخاب کن")
 
-
-# ======================= APP =========================
 app = Application.builder().token(BotToken).build()
 
 app.add_handler(CommandHandler("start", start_bot))
