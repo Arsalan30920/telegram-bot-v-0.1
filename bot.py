@@ -1,6 +1,7 @@
+# ================================= imports ====================
+import os
 import logging
 from telegram import Update, ReplyKeyboardMarkup
-import os
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -9,11 +10,21 @@ from telegram.ext import (
     filters
 )
 
-BotToken = os.getenv("BOT_TOKEN")
-adminID = 8581685408
+# ======================= LOGGING ====================
 logging.basicConfig(level=logging.INFO)
 
+# ======================= BOT CONFIG ====================
+BotToken = os.getenv("BOT_TOKEN")
+adminID = 8581685408
+
+if not BotToken:
+    raise ValueError("BOT_TOKEN is not set!")
+
+# ======================= START =========================
 async def start_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    if not update.message:
+        return
 
     keyboard = [
         ["🐞 گزارش باگ", "💬 پیشنهاد"],
@@ -27,221 +38,132 @@ async def start_bot(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=markup
     )
 
+# ======================= HANDLE BUTTONS =========================
 async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    text = update.message.text
+    if not update.message:
+        return
+
+    text = update.message.text or ""
     user = update.effective_user
 
+    # ---------------- MENU ----------------
     if text == "🐞 گزارش باگ":
         context.user_data.clear()
-        context.user_data["reportBug"] = True
-        await update.message.reply_text("مشکل را بنویس یا عکس یا ویدیو ارسال کن")
+        context.user_data["mode"] = "bug"
+        await update.message.reply_text("مشکل را بنویس یا عکس یا ویدیو بفرست")
         return
 
     elif text == "💬 پیشنهاد":
         context.user_data.clear()
-        context.user_data["Suggestion"] = True
+        context.user_data["mode"] = "suggest"
         await update.message.reply_text("پیشنهادت را بنویس")
         return
 
     elif text == "تجربیات من از بازی":
         context.user_data.clear()
-        context.user_data["playTime"] = True
+        context.user_data["mode"] = "play"
         await update.message.reply_text("تجربه‌ات را ارسال کن 🌹")
         return
 
     elif text == "❓ راهنما":
         await update.message.reply_text(
-            """
-👋 سلام، به بخش راهنما خوش آمدی.
-
-🐞 گزارش باگ: میتونی باگ ها رو با ویدیو یا عکس به ما نشون بدی
-💬 پیشنهاد: ایده برای بازی
-🎮 تجربه: تجربت رو به ما بگو از تجربت ویدیو ه بده لطفا 
-
-👨‍💻 سازنده: استودیو VIRO
-📞 @Khan213187
-"""
+            "👋 راهنما:\n\n"
+            "🐞 گزارش باگ\n💬 پیشنهاد\n🎮 تجربه بازی\n\n"
+            "👨‍💻 VIRO Studio\n📞 @Khan213187"
         )
         return
 
-    if context.user_data.get("reportBug"):
+    # ======================= BUG =========================
+    if context.user_data.get("mode") == "bug":
 
-        caption = update.message.caption or ""
-        text_msg = update.message.text or ""
-
-        if update.message.text:
-
-            await context.bot.send_message(
-                chat_id=adminID,
-                text=f"""
-🚨 BUG REPORT
-
-👤 Name: {user.full_name}
-🆔 ID: {user.id}
-📛 Username: @{user.username or "No Username"}
-
-📝 Text:
-{text_msg}
-"""
-            )
-
-        elif update.message.photo:
-
-            await context.bot.send_photo(
-                chat_id=adminID,
-                photo=update.message.photo[-1].file_id,
-                caption=f"""
-🚨 BUG REPORT (PHOTO)
-
-👤 {user.full_name}
-🆔 {user.id}
-
-📝 {caption}
-"""
-            )
-
-        elif update.message.video:
-
-            await context.bot.send_video(
-                chat_id=adminID,
-                video=update.message.video.file_id,
-                caption=f"""
-🚨 BUG REPORT (VIDEO)
-
-👤 {user.full_name}
-🆔 {user.id}
-
-📝 {caption}
-"""
-            )
-
-        else:
-            await update.message.reply_text("❌ فقط متن یا عکس یا ویدیو بفرست")
-            return
-
-        await update.message.reply_text("✅ گزارش شما ارسال شد")
-        context.user_data.clear()
+        await send_to_admin(update, context, user, "🚨 BUG REPORT")
         return
 
-    if context.user_data.get("Suggestion"):
+    # ======================= SUGGEST =========================
+    if context.user_data.get("mode") == "suggest":
 
-        caption = update.message.caption or ""
-
-        if update.message.text:
-
-            await context.bot.send_message(
-                chat_id=adminID,
-                text=f"""
-💡 SUGGESTION
-
-👤 {user.full_name}
-🆔 {user.id}
-
-📝 {update.message.text}
-"""
-            )
-
-        elif update.message.photo:
-
-            await context.bot.send_photo(
-                chat_id=adminID,
-                photo=update.message.photo[-1].file_id,
-                caption=f"""
-💡 SUGGESTION (PHOTO)
-
-👤 {user.full_name}
-🆔 {user.id}
-
-📝 {caption}
-"""
-            )
-
-        elif update.message.video:
-
-            await context.bot.send_video(
-                chat_id=adminID,
-                video=update.message.video.file_id,
-                caption=f"""
-💡 SUGGESTION (VIDEO)
-
-👤 {user.full_name}
-🆔 {user.id}
-
-📝 {caption}
-"""
-            )
-
-        else:
-            await update.message.reply_text("❌ فقط متن یا عکس یا ویدیو بفرست")
-            return
-
-        await update.message.reply_text("❤️ ممنون از پیشنهادت")
-        context.user_data.clear()
+        await send_to_admin(update, context, user, "💡 SUGGESTION")
         return
 
-    if context.user_data.get("playTime"):
+    # ======================= PLAY =========================
+    if context.user_data.get("mode") == "play":
 
-        caption = update.message.caption or ""
-
-        if update.message.text:
-
-            await context.bot.send_message(
-                chat_id=adminID,
-                text=f"""
-🎮 EXPERIENCE
-
-👤 {user.full_name}
-🆔 {user.id}
-
-📝 {update.message.text}
-"""
-            )
-
-        elif update.message.photo:
-
-            await context.bot.send_photo(
-                chat_id=adminID,
-                photo=update.message.photo[-1].file_id,
-                caption=f"""
-🎮 EXPERIENCE (PHOTO)
-
-👤 {user.full_name}
-🆔 {user.id}
-
-📝 {caption}
-"""
-            )
-
-        elif update.message.video:
-
-            await context.bot.send_video(
-                chat_id=adminID,
-                video=update.message.video.file_id,
-                caption=f"""
-🎮 EXPERIENCE (VIDEO)
-
-👤 {user.full_name}
-🆔 {user.id}
-
-📝 {caption}
-"""
-            )
-
-        else:
-            await update.message.reply_text("❌ فقط متن یا عکس یا ویدیو بفرست")
-            return
-
-        await update.message.reply_text("🌹 ممنون از تجربه‌ات")
-        context.user_data.clear()
+        await send_to_admin(update, context, user, "🎮 EXPERIENCE")
         return
 
     await update.message.reply_text("❌ لطفاً یکی از گزینه‌ها را انتخاب کن")
 
+# ======================= SEND FUNCTION (ANTI CRASH) =========================
+async def send_to_admin(update, context, user, title):
+
+    msg = update.message
+
+    caption = msg.caption or ""
+    text = msg.text or ""
+
+    try:
+
+        if msg.text:
+
+            await context.bot.send_message(
+                chat_id=adminID,
+                text=f"""
+{title}
+
+👤 {user.full_name}
+🆔 {user.id}
+
+📝 {text}
+"""
+            )
+
+        elif msg.photo:
+
+            await context.bot.send_photo(
+                chat_id=adminID,
+                photo=msg.photo[-1].file_id,
+                caption=f"""
+{title} (PHOTO)
+
+👤 {user.full_name}
+🆔 {user.id}
+
+📝 {caption}
+"""
+            )
+
+        elif msg.video:
+
+            await context.bot.send_video(
+                chat_id=adminID,
+                video=msg.video.file_id,
+                caption=f"""
+{title} (VIDEO)
+
+👤 {user.full_name}
+🆔 {user.id}
+
+📝 {caption}
+"""
+            )
+
+        else:
+            await update.message.reply_text("❌ فقط متن یا عکس یا ویدیو بفرست")
+            return
+
+        await update.message.reply_text("✅ ارسال شد")
+        context.user_data["mode"] = None
+
+    except Exception as e:
+        logging.error(e)
+        await update.message.reply_text("❌ خطا در ارسال")
+
+# ======================= APP =========================
 app = Application.builder().token(BotToken).build()
 
 app.add_handler(CommandHandler("start", start_bot))
-app.add_handler(MessageHandler(filters.TEXT | filters.PHOTO | filters.VIDEO, handle_buttons))
+app.add_handler(MessageHandler(filters.ALL, handle_buttons))
 
 print("Bot is running...")
 app.run_polling()
