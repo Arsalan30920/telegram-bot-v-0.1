@@ -1,4 +1,5 @@
 import asyncio
+import os
 import random
 from telegram.ext import CallbackQueryHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -85,7 +86,8 @@ conn.commit()
 # ================== LOGGING ==================
 logging.basicConfig(level=logging.INFO)
 
-BotToken = "BOT_TOKEN"  
+# ✅ اصلاح: توکن رو مستقیم بذار یا از محیط متغیر بگیر
+BotToken = os.getenv("BOT_TOKEN")  # اینجا توکن خودت رو بذار
 ADMINS_ID = [8581685408]
 CHANNEL_ID = "@VirozStudiogame"
 
@@ -114,6 +116,18 @@ def remove_coin(user_id, amount):
     conn.commit()
 
 
+# ✅ تابع جدید: اطمینان از وجود کاربر در دیتابیس
+def ensure_user_exists(user_id, first_name, username):
+    cur.execute("SELECT user_id FROM USERSPROFILE WHERE user_id = ?", (user_id,))
+    if not cur.fetchone():
+        join_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cur.execute("""
+            INSERT INTO USERSPROFILE (user_id, player_name, username, join_date, coins)
+            VALUES (?, ?, ?, ?, 100)
+        """, (user_id, first_name, username, join_date))
+        conn.commit()
+
+
 # ================== KEYBOARDS ==================
 def is_admin(user_id):
     result = cur.execute(
@@ -136,6 +150,7 @@ async def check_member(update: Update, context: CallbackContext):
             ChatMemberStatus.OWNER
         ]
     except Exception as e:
+        logging.error(f"Error checking member: {e}")
         return False
 
 
@@ -216,38 +231,44 @@ async def spin_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
 
     user_id = query.from_user.id
-    bet = int(query.data.split("_")[1])
 
-    # بررسی سکه
+    # ✅ اطمینان از وجود کاربر
+    ensure_user_exists(user_id, query.from_user.first_name, query.from_user.username)
+
+    try:
+        bet = int(query.data.split("_")[1])
+    except (ValueError, IndexError):
+        await query.message.reply_text("❌ مقدار نامعتبر!")
+        return
+
     if not has_enough_coins(user_id, bet):
         await query.message.reply_text("❌ سکه کافی نداری.")
         return
 
-    # کم کردن مبلغ شرط
+    # کم کردن شرط
     remove_coin(user_id, bet)
 
-    # پیام اولیه
-    msg = await query.message.reply_text("🎰 در حال چرخاندن...")
+    msg = await query.message.reply_text("🎰 در حال چرخش...")
 
-    # انیمیشن ساده
-    for i in range(3):
-        await asyncio.sleep(0.7)
-        await msg.edit_text("🎰 در حال چرخاندن" + "." * (i + 1))
+    await asyncio.sleep(1)
+    await msg.edit_text("🎰 در حال بررسی نتیجه...")
 
-    # نتیجه
-    if random.randint(1, 100) <= 45:  # 45 درصد برد
+    win = random.randint(1, 100)
+
+    if win <= 45:
         reward = int(bet * 1.5)
         add_coin(user_id, reward)
 
         await msg.edit_text(
-            f"🎉 برنده شدی!\n\n"
+            f"🎉 بردی!\n\n"
             f"💰 شرط: {bet}\n"
-            f"🏆 جایزه: {reward} سکه"
+            f"🏆 جایزه: {reward}\n"
+            f"📈 سود خالص: {reward - bet}"
         )
     else:
         await msg.edit_text(
             f"😢 باختی!\n\n"
-            f"💸 {bet} سکه از دست دادی."
+            f"💸 از دست دادی: {bet}"
         )
 
     await query.message.delete()
@@ -287,6 +308,9 @@ async def user_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text or ""
     user = update.effective_user
     state = context.user_data.get("state", "main")
+
+    # ✅ اطمینان از وجود کاربر
+    ensure_user_exists(user.id, user.first_name, user.username)
 
     if state == "main":
         if text == "🔙 بازگشت":
@@ -483,25 +507,26 @@ async def send_to_admin(update, context, user, title):
     text = msg.text or ""
 
     try:
+        # ✅ بررسی اینکه پیام چیزی برای ارسال داره یا نه
         if msg.text and not msg.photo and not msg.video:
             for ad_id in ADMINS_ID:
                 await context.bot.send_message(
                     chat_id=ad_id,
-                    text=f"{title}\n\n👤 {user.full_name}\n🆔 {user.id}\n\n📝 {text}"
+                    text=f"{title}\n\n👤 {user.full_name}\n🆔 {user.id}\n📝 @{user.username or 'ندارد'}\n\n📝 {text}"
                 )
         elif msg.photo:
             for ad_id in ADMINS_ID:
                 await context.bot.send_photo(
                     chat_id=ad_id,
                     photo=msg.photo[-1].file_id,
-                    caption=f"{title}\n\n👤 {user.full_name}\n🆔 {user.id}\n\n📝 {caption}"
+                    caption=f"{title}\n\n👤 {user.full_name}\n🆔 {user.id}\n📝 @{user.username or 'ندارد'}\n\n📝 {caption}"
                 )
         elif msg.video:
             for ad_id in ADMINS_ID:
                 await context.bot.send_video(
                     chat_id=ad_id,
                     video=msg.video.file_id,
-                    caption=f"{title}\n\n👤 {user.full_name}\n🆔 {user.id}\n\n📝 {caption}"
+                    caption=f"{title}\n\n👤 {user.full_name}\n🆔 {user.id}\n📝 @{user.username or 'ندارد'}\n\n📝 {caption}"
                 )
         else:
             await update.message.reply_text("⚠️ فرمت پشتیبانی نمی‌شود")
@@ -510,7 +535,7 @@ async def send_to_admin(update, context, user, title):
         await update.message.reply_text("📤 ارسال به ادمین انجام شد")
 
     except Exception as e:
-        logging.error(e)
+        logging.error(f"Error sending to admin: {e}")
         await update.message.reply_text("❌ خطا در ارسال به ادمین")
 
 
@@ -704,7 +729,9 @@ async def admin_button(update, context):
 
 # ================= COMMAND HANDLERS =================
 async def lucky_spin(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("مقدار پول برای استارت بازی رو انتخاب کن", reply_markup=spin_keyboard)
+    user_id = update.effective_user.id
+    ensure_user_exists(user_id, update.effective_user.first_name, update.effective_user.username)
+    await update.message.reply_text("🎰 مقدار شرط رو انتخاب کن:", reply_markup=spin_keyboard)
 
 
 async def quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -722,18 +749,18 @@ async def paper(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def killmonster(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("⚔️ بازی نبرد با هیولا به زودی میاد!")
 
-
+print(BotToken)
 # ================= APP =================
 app = Application.builder().token(BotToken).build()
 
 app.add_handler(CallbackQueryHandler(spin_handler))
 app.add_handler(CommandHandler("start", start_bot))
-app.add_handler(CommandHandler("luckySpin", lucky_spin))  # اصلاح: با حروف بزرگ S
+app.add_handler(CommandHandler("luckySpin", lucky_spin))
 app.add_handler(CommandHandler("quiz", quiz))
 app.add_handler(CommandHandler("bomb", bomb))
 app.add_handler(CommandHandler("paper", paper))
 app.add_handler(CommandHandler("killmonster", killmonster))
 app.add_handler(MessageHandler(filters.ALL, handler_button))
 
-print("Bot is running...")
+print("🤖 Bot is running...")
 app.run_polling()
