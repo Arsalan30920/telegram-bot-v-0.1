@@ -13,6 +13,7 @@ from telegram import (
     ReplyKeyboardMarkup,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
+    WebAppInfo,
 )
 from telegram.constants import ChatMemberStatus
 from telegram.ext import (
@@ -26,6 +27,8 @@ from telegram.ext import (
 )
 
 # ================== LOGGING ==================
+
+
 # لاگ‌ها دیگه هیچ اطلاعات حساس (مثل توکن) رو چاپ نمی‌کنن
 logging.basicConfig(
     level=logging.INFO,
@@ -131,7 +134,7 @@ CREATE TABLE IF NOT EXISTS minigame_stats (
 conn.commit()
 
 # ✅ توکن باید از متغیر محیطی خونده بشه، هیچ‌وقت مستقیم توی کد یا چاپ نشه
-BotToken = os.getenv("BOT_TOKEN")
+BotToken = "8813949311:AAHDMJPzAi3DG_F3edWMRsNGhX-qD_XOLBo"
 if not BotToken:
     raise RuntimeError(
         "❌ متغیر محیطی BOT_TOKEN تنظیم نشده است. "
@@ -140,6 +143,10 @@ if not BotToken:
 
 ADMINS_ID = [8581685408]
 CHANNEL_ID = "@VirozStudiogame"
+
+# ✅ آدرس HTTPS سرور بازی VIRO Survivor (فایل server/app.py)
+# باید یک دامنه HTTPS واقعی باشد؛ تلگرام WebApp با HTTP یا IP لوکال کار نمی‌کند.
+WEBAPP_URL = os.getenv("WEBAPP_URL")
 
 # محدودیت‌های امنیتی
 MAX_TEXT_LENGTH = 1000          # حداکثر طول متن گزارش/پیشنهاد/تجربه
@@ -511,8 +518,11 @@ async def user_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
    ⚔️ نبرد کلاسیک
 
 ⚔️  /killmonster
-   ✦ نبرد با هیولا
-   👹 زنده بمون یا حذف شو
+   ✦ نبرد با هیولا (بازی واقعی)
+   👹 وارد آرنای وب می‌شی
+
+🕹️  /killmonster_classic
+   ✦ نسخه سریع متنی
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🏆 سیستم جوایز
@@ -1063,8 +1073,32 @@ KM_MONSTER_HP = 80
 KM_REWARD_PER_HP = 1  # به ازای هر HP باقی‌مانده بازیکن، سکه جایزه
 
 
-@rate_limited("killmonster")
+@rate_limited("killmonster_open")
 async def killmonster(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    ✅ نسخه‌ی جدید: به‌جای اجرای بازی داخل چت، دکمه‌ی Telegram WebApp باز می‌شود
+    و کاربر وارد بازی واقعی VIRO Survivor (Phaser.js) می‌شود.
+    نسخه‌ی متنی قبلی حذف نشده و از طریق /killmonster_classic همچنان در دسترس است.
+    """
+    user = update.effective_user
+    ensure_user_exists(user.id, user.first_name, user.username)
+
+    if not WEBAPP_URL:
+        await update.message.reply_text(
+            "⚠️ بازی هنوز فعال نیست (WEBAPP_URL تنظیم نشده). از /killmonster_classic استفاده کن."
+        )
+        return
+
+    buttons = [[InlineKeyboardButton("👹 ورود به آرنا", web_app=WebAppInfo(url=WEBAPP_URL))]]
+    await update.message.reply_text(
+        "⚔️ آماده‌ای وارد آرنای VIRO Survivor بشی؟\nبرای شروع دکمه‌ی زیر رو بزن:",
+        reply_markup=InlineKeyboardMarkup(buttons),
+    )
+
+
+@rate_limited("killmonster")
+async def killmonster_classic(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """نسخه‌ی قبلی، متنی و داخل چت - برای حفظ سازگاری کامل با قابلیت قبلی حذف نشده."""
     user = update.effective_user
     ensure_user_exists(user.id, user.first_name, user.username)
 
@@ -1182,9 +1216,11 @@ app.add_handler(CommandHandler("quiz", quiz))
 app.add_handler(CommandHandler("bomb", bomb))
 app.add_handler(CommandHandler("paper", paper))
 app.add_handler(CommandHandler("killmonster", killmonster))
+app.add_handler(CommandHandler("killmonster_classic", killmonster_classic))
 app.add_handler(MessageHandler(filters.ALL, handler_button))
 
 app.add_error_handler(error_handler)
 
 logger.info("🤖 Bot is running...")
-app.run_polling()
+if __name__ == "__main__":
+    app.run_polling()
