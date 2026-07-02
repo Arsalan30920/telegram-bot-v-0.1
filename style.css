@@ -1,0 +1,182 @@
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0b0c12;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  color: #eef1ff;
+  user-select: none;
+}
+
+#game-container {
+  position: fixed;
+  inset: 0;
+}
+
+#game-container canvas {
+  display: block;
+}
+
+/* ---------------- LOADING ---------------- */
+#loading-screen {
+  position: fixed;
+  inset: 0;
+  background: #0b0c12;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  z-index: 999;
+}
+#loading-screen.hidden { display: none; }
+.loading-text { font-size: 16px; color: #9aa3d1; }
+.loading-spinner {
+  width: 42px; height: 42px;
+  border: 4px solid #22263a;
+  border-top-color: #29b6f6;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------------- HUD ---------------- */
+#hud {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  padding: 10px 14px;
+  padding-top: max(10px, env(safe-area-inset-top));
+  z-index: 50;
+  pointer-events: none;
+}
+
+.hud-top-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.hud-badge {
+  background: rgba(20, 22, 34, 0.85);
+  border: 1px solid #2c3153;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: bold;
+  color: #7fdbff;
+  box-shadow: 0 0 8px rgba(41, 182, 246, 0.25);
+}
+
+.hud-currency {
+  margin-right: auto;
+  background: rgba(20, 22, 34, 0.85);
+  border: 1px solid #2c3153;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.bar-wrap { display: flex; flex-direction: column; gap: 4px; max-width: 320px; }
+
+.bar {
+  height: 12px;
+  background: #14161f;
+  border: 1px solid #2c3153;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.bar-fill { height: 100%; width: 0%; transition: width 0.15s ease-out; }
+.hp-fill { background: linear-gradient(90deg, #ff5252, #ff8a80); box-shadow: 0 0 8px #ff5252aa; }
+.xp-fill { background: linear-gradient(90deg, #29b6f6, #80d8ff); box-shadow: 0 0 8px #29b6f6aa; }
+
+/* ---------------- JOYSTICK ---------------- */
+#joystick-zone {
+  position: fixed;
+  left: 24px;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: rgba(20, 22, 34, 0.55);
+  border: 2px solid #2c3153;
+  z-index: 60;
+  touch-action: none;
+}
+
+#joystick-knob {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 46px; height: 46px;
+  margin-top: -23px; margin-left: -23px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #4fc3f7, #0277bd);
+  box-shadow: 0 0 12px rgba(79, 195, 247, 0.6);
+  transition: transform 0.05s linear;
+}
+
+@media (min-width: 900px) {
+  #joystick-zone { display: none; } /* دسکتاپ از WASD استفاده می‌کند */
+}
+
+/* ---------------- MODALS ---------------- */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 7, 12, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.modal.hidden { display: none; }
+
+.modal-box {
+  background: #14161f;
+  border: 1px solid #2c3153;
+  border-radius: 16px;
+  padding: 26px;
+  width: min(92vw, 380px);
+  text-align: center;
+  box-shadow: 0 0 30px rgba(41, 182, 246, 0.15);
+}
+
+.modal-box h2 { margin: 0 0 8px; }
+.modal-box p { color: #9aa3d1; margin: 0 0 16px; line-height: 1.8; }
+
+.upgrade-list { display: flex; flex-direction: column; gap: 10px; }
+.upgrade-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #1c2036;
+  border: 1px solid #2c3153;
+  color: #eef1ff;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: 0.15s;
+}
+.upgrade-card:hover, .upgrade-card:active {
+  border-color: #29b6f6;
+  box-shadow: 0 0 10px rgba(41, 182, 246, 0.35);
+}
+.upgrade-icon { font-size: 20px; }
+
+.primary-btn {
+  background: linear-gradient(90deg, #29b6f6, #0277bd);
+  border: none;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 0 14px rgba(41, 182, 246, 0.4);
+}

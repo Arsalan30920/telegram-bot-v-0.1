@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>VIRO Survivor</title>
+<link rel="stylesheet" href="css/style.css" />
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.70.0/phaser.min.js"></script>
+</head>
+<body>
+
+  <div id="loading-screen">
+    <div class="loading-text">در حال اتصال به تلگرام...</div>
+    <div class="loading-spinner"></div>
+  </div>
+
+  <div id="game-container"></div>
+
+  <!-- ================= HUD ================= -->
+  <div id="hud">
+    <div class="hud-top-row">
+      <div id="level-text" class="hud-badge">Lv 1</div>
+      <div id="wave-text" class="hud-badge">Wave 1</div>
+      <div class="hud-currency">💰 <span id="coin-text">0</span></div>
+      <div class="hud-currency">💎 <span id="gem-text">0</span></div>
+    </div>
+
+    <div class="bar-wrap">
+      <div class="bar hp-bar"><div id="hp-fill" class="bar-fill hp-fill"></div></div>
+      <div class="bar xp-bar"><div id="xp-fill" class="bar-fill xp-fill"></div></div>
+    </div>
+  </div>
+
+  <!-- ================= JOYSTICK (موبایل) ================= -->
+  <div id="joystick-zone">
+    <div id="joystick-knob"></div>
+  </div>
+
+  <!-- ================= LEVEL UP MODAL ================= -->
+  <div id="levelup-modal" class="modal hidden">
+    <div class="modal-box">
+      <h2>🎉 لول‌آپ!</h2>
+      <p>یکی از ارتقاها رو انتخاب کن</p>
+      <div id="levelup-options" class="upgrade-list"></div>
+    </div>
+  </div>
+
+  <!-- ================= GAME OVER MODAL ================= -->
+  <div id="gameover-modal" class="modal hidden">
+    <div class="modal-box">
+      <h2 id="gameover-title">💀 مرگ</h2>
+      <p id="gameover-stats"></p>
+      <button id="retry-btn" class="primary-btn">🔁 بازی مجدد</button>
+    </div>
+  </div>
+
+  <script src="js/enemyConfig.js"></script>
+  <script src="js/network.js"></script>
+  <script src="js/joystick.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
